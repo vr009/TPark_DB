@@ -1,30 +1,42 @@
 package repo
 
-import "forum/internal/models"
+import (
+	"forum/internal/models"
+	"github.com/jackc/pgtype"
+	"github.com/jackc/pgtype/pgxtype"
+)
 
-type ForumRepo struct{}
+type ForumRepo struct {
+	pool pgxtype.Querier
+}
 
-func (ForumRepo) CreateForum(forum models.Forum) (models.Forum, models.Error) {
+func NewForumRepo(pool pgxtype.Querier) *ForumRepo {
+	return &ForumRepo{
+		pool: pool,
+	}
+}
+
+func (ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetForum(forum models.Forum) (models.Forum, models.Error) {
+func (ForumRepo) GetForum(forum models.Forum) (models.Forum, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, models.Error) {
+func (ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, models.Error) {
+func (ForumRepo) GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetThreads(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Threads, models.Error) {
+func (ForumRepo) GetThreads(forum models.Forum, limit int32, since pgtype.Timestamptz, desc bool) (models.Threads, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }

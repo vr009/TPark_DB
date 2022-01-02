@@ -3,6 +3,7 @@ package usecase
 import (
 	"forum/internal"
 	"forum/internal/models"
+	"github.com/jackc/pgtype"
 )
 
 type ForumUsecase struct {
@@ -15,24 +16,24 @@ func NewForumUsecase(repo *internal.Repo) *ForumUsecase {
 	}
 }
 
-func (fu ForumUsecase) CreateForum(forum models.Forum) (models.Forum, models.Error) {
+func (fu ForumUsecase) CreateForum(forum models.Forum) (models.Forum, *models.InternalError) {
+	return fu.repo.CreateForum(forum)
+}
+
+func (fu ForumUsecase) GetForum(forum models.Forum) (models.Forum, *models.InternalError) {
 	return fu.repo.GetForum(forum)
 }
 
-func (fu ForumUsecase) GetForum(forum models.Forum) (models.Forum, models.Error) {
-	return fu.repo.GetForum(forum)
-}
-
-func (fu ForumUsecase) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, models.Error) {
+func (fu ForumUsecase) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError) {
 	return fu.repo.CreateThread(forum, thread)
 }
 
-func (fu ForumUsecase) GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, models.Error) {
+func (fu ForumUsecase) GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, *models.InternalError) {
 	return fu.repo.GetUsers(forum, limit, sinceUser, desc)
 }
 
-func (fu ForumUsecase) GetThreads(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Threads, models.Error) {
-	return fu.repo.GetThreads(forum, limit, sinceUser, desc)
+func (fu ForumUsecase) GetThreads(forum models.Forum, limit int32, since pgtype.Timestamptz, desc bool) (models.Threads, *models.InternalError) {
+	return fu.repo.GetThreads(forum, limit, since, desc)
 }
 
 func (fu ForumUsecase) GetThreadInfo(thread models.Thread, related interface{}) (models.Thread, models.Error) {

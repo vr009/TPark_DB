@@ -10,9 +10,9 @@ type ForumUsecase struct {
 	repo internal.Repo
 }
 
-func NewForumUsecase(repo *internal.Repo) *ForumUsecase {
+func NewForumUsecase(repo internal.Repo) *ForumUsecase {
 	return &ForumUsecase{
-		repo: *repo,
+		repo: repo,
 	}
 }
 

@@ -1,5 +1,77 @@
 package main
 
-func main() {
+import (
+	"context"
+	"fmt"
+	"forum/internal/delivery"
+	repo2 "forum/internal/repo"
+	usecase2 "forum/internal/usecase"
+	config "forum/utils"
+	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
+	"net/http"
+	"os"
+)
 
+func main() {
+	r := mux.NewRouter()
+	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "8000")}
+	conn, err := config.GetConnectionString()
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	pool, err := pgxpool.Connect(context.Background(), conn)
+	if err != nil {
+		log.Print(err)
+		os.Exit(1)
+	}
+
+	repo := repo2.NewForumRepo(pool)
+	usecase := usecase2.NewForumUsecase(repo)
+	handler := delivery.NewForumHandler(usecase)
+
+	forum := r.PathPrefix("/forum").Subrouter()
+	{
+		forum.HandleFunc("/create", handler.CreateForum).Methods("POST")
+		forum.HandleFunc("/{slug}/details", handler.GetForum).Methods("GET")
+		forum.HandleFunc("/{slug}/create", handler.CreateThread).Methods("POST")
+		forum.HandleFunc("/{slug}/users", handler.GetUsers).Methods("GET")
+		forum.HandleFunc("/{slug}/threads", handler.GetThreads).Methods("GET")
+	}
+
+	post := r.PathPrefix("/post").Subrouter()
+	{
+		post.HandleFunc("/{id}/details", handler.GetThreadInfo).Methods("GET")
+		post.HandleFunc("/id/details", handler.UpdateMessage).Methods("POST")
+	}
+
+	service := r.PathPrefix("/service").Subrouter()
+	{
+		service.HandleFunc("/clear", handler.DropAllInfo).Methods("POST")
+		service.HandleFunc("/status", handler.GetStatus).Methods("GET")
+	}
+
+	thread := r.PathPrefix("/thread").Subrouter()
+	{
+		thread.HandleFunc("/{slug}/create", handler.CreateThread).Methods("POST")
+		thread.HandleFunc("/{slug}/details", handler.GetThreadInfoBySlug).Methods("GET")
+		thread.HandleFunc("/{slug}/details", handler.UpdateThread).Methods("POST")
+		thread.HandleFunc("/{slug}/posts", handler.GetPosts).Methods("GET")
+		thread.HandleFunc("/{slug}/vote", handler.VoteForThread).Methods("POST")
+	}
+
+	user := r.PathPrefix("/user").Subrouter()
+	{
+		user.HandleFunc("/{nickname}/create", handler.CreateProfile).Methods("POST")
+		user.HandleFunc("/{nickname}/profile", handler.GetProfile).Methods("GET")
+		user.HandleFunc("/{nickname}/profile", handler.UpdateProfile).Methods("POST")
+	}
+
+	http.Handle("/", r)
+	log.Print("main running on: ", srv.Addr)
+
+	log.Fatal(srv.ListenAndServe())
 }

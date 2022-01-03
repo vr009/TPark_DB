@@ -176,62 +176,168 @@ func (fh ForumHandler) GetThreads(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func (ForumHandler) GetThreadInfo(w http.ResponseWriter, r *http.Request) {
+func (fh ForumHandler) GetThreadInfo(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(GetFromVars(r, "id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	post := models.Post{Id: int32(id)}
+	relatedInfo := r.URL.Query().Get("related")
+	postFull, postErr := fh.usecase.GetPostInfo(post, relatedInfo)
+	if postErr != nil {
+		body, _ := easyjson.Marshal(&postErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+	body, _ := easyjson.Marshal(&postFull)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
+func (fh ForumHandler) UpdateMessage(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(GetFromVars(r, "id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	post := models.Post{Id: int32(id)}
+	postUpdate := models.PostUpdate{}
+	err = easyjson.UnmarshalFromReader(r.Body, &postUpdate)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	newPost, intErr := fh.usecase.UpdateMessage(post, postUpdate)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(&intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+	body, _ := json.Marshal(&newPost)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+	return
+}
+
+func (fh ForumHandler) DropAllInfo(w http.ResponseWriter, r *http.Request) {
+	fh.usecase.DropAllInfo()
+	w.WriteHeader(http.StatusOK)
+}
+
+func (fh ForumHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
+	st := fh.usecase.GetStatus()
+	body, _ := easyjson.Marshal(st)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
+func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
+	slug := GetFromVars(r, "slug")
+	if slug == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	thread := models.Thread{
+		Slug: slug,
+	}
+
+	posts := models.Posts{}
+	err := json.NewDecoder(r.Body).Decode(posts)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, intErr := fh.usecase.CreatePosts(thread, posts)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(int(intErr.Code))
+		w.Write(body)
+		return
+	}
+
+	body, _ := json.Marshal(posts)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
+func (fh ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Request) {
+	slug := GetFromVars(r, "slug")
+	if slug == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	thread := models.Thread{
+		Slug: slug,
+	}
+
+	th, intErr := fh.usecase.GetThreadInfoBySlug(thread)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+
+	body, _ := easyjson.Marshal(th)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
+func (fh ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
+	slug := GetFromVars(r, "slug")
+	if slug == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	thread := models.Thread{
+		Slug: slug,
+	}
+	updateThread := models.ThreadUpdate{}
+	err := easyjson.UnmarshalFromReader(r.Body, &updateThread)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	th, intErr := fh.usecase.UpdateThread(thread, updateThread)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+
+	body, _ := easyjson.Marshal(th)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
+}
+
+func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumHandler) UpdateMessage(w http.ResponseWriter, r *http.Request) {
+func (fh ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumHandler) DropAllInfo(w http.ResponseWriter, r *http.Request) {
+func (fh ForumHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
+func (fh ForumHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (ForumHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+func (fh ForumHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -2,7 +2,7 @@ package models
 
 type PostFull struct {
 	Post   Post   `json:"post"`
-	Author User   `json:"author"`
-	Thread Thread `json:"thread"`
-	Forum  Forum  `json:"forum"`
+	Author User   `json:"author,omitempty"`
+	Thread Thread `json:"thread,omitempty"`
+	Forum  Forum  `json:"forum,omitempty"`
 }

@@ -41,62 +41,62 @@ func (ForumRepo) GetThreads(forum models.Forum, limit int32, since pgtype.Timest
 	panic("implement me")
 }
 
-func (ForumRepo) GetThreadInfo(thread models.Thread, related interface{}) (models.Thread, models.Error) {
+func (ForumRepo) GetPostInfo(post models.Post, related string) (models.PostFull, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) UpdateMessage(post models.Post, update models.PostUpdate) (models.Post, models.Error) {
+func (ForumRepo) UpdateMessage(post models.Post, update models.PostUpdate) (models.Post, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) DropAllData() models.Error {
+func (ForumRepo) DropAllData() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetStatus() (models.Status, models.Error) {
+func (ForumRepo) GetStatus() models.Status {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) CreatePosts(thread models.Thread, posts models.Posts) (models.Posts, models.Error) {
+func (ForumRepo) CreatePosts(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetThreadInfoBySlug(thread models.Thread) (models.Thread, models.Error) {
+func (ForumRepo) GetThreadInfoBySlug(thread models.Thread) (models.Thread, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, models.Error) {
+func (ForumRepo) UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetPosts(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Posts, models.Error) {
+func (ForumRepo) GetPosts(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Posts, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, models.Error) {
+func (ForumRepo) VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) CreateUser(user models.User) (models.User, models.Error) {
+func (ForumRepo) CreateUser(user models.User) (models.User, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) GetUser(user models.User) (models.User, models.Error) {
+func (ForumRepo) GetUser(user models.User) (models.User, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ForumRepo) UpdateUser(user models.User) (models.User, models.Error) {
+func (ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }

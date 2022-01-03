@@ -64,8 +64,8 @@ func (fu ForumUsecase) UpdateThread(thread models.Thread, update models.ThreadUp
 	return fu.repo.UpdateThread(thread, update)
 }
 
-func (fu ForumUsecase) GetPosts(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Posts, *models.InternalError) {
-	return fu.repo.GetPosts(forum, limit, sinceUser, desc)
+func (fu ForumUsecase) GetPosts(thread models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError) {
+	return fu.repo.GetPosts(thread, limit, sincePost, sort, desc)
 }
 
 func (fu ForumUsecase) VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError) {

@@ -76,7 +76,7 @@ func (ForumRepo) UpdateThread(thread models.Thread, update models.ThreadUpdate) 
 	panic("implement me")
 }
 
-func (ForumRepo) GetPosts(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Posts, *models.InternalError) {
+func (ForumRepo) GetPosts(thread models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError) {
 	//TODO implement me
 	panic("implement me")
 }

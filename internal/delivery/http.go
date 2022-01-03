@@ -350,21 +350,104 @@ func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	slug := GetFromVars(r, "slug")
+	if slug == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	thread := models.Thread{
+		Slug: slug,
+	}
+	vote := models.Vote{}
+	err := easyjson.UnmarshalFromReader(r.Body, &vote)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	th, intErr := fh.usecase.VoteForThread(thread, vote)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+	body, _ := easyjson.Marshal(th)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 func (fh ForumHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	nickname := GetFromVars(r, "nickname")
+	if nickname == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user := models.User{}
+	err := easyjson.UnmarshalFromReader(r.Body, &user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user.NickName = nickname
+	_, intErr := fh.usecase.CreateProfile(user)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusConflict)
+		w.Write(body)
+		return
+	}
+	body, _ := easyjson.Marshal(user)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 func (fh ForumHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	nickname := GetFromVars(r, "nickname")
+	if nickname == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user := models.User{NickName: nickname}
+
+	usr, intErr := fh.usecase.GetProfile(user)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+	body, _ := easyjson.Marshal(usr)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }
 
 func (fh ForumHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	nickname := GetFromVars(r, "nickname")
+	if nickname == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user := models.User{NickName: nickname}
+
+	userUpdate := models.UserUpdate{}
+	err := easyjson.UnmarshalFromReader(r.Body, &userUpdate)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	user.FullName = userUpdate.FullName
+	user.About = userUpdate.About
+	user.Email = userUpdate.Email
+
+	usr, intErr := fh.usecase.UpdateProfile(user)
+	if intErr != nil {
+		body, _ := easyjson.Marshal(intErr.Err)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(body)
+		return
+	}
+	body, _ := easyjson.Marshal(usr)
+	w.WriteHeader(http.StatusOK)
+	w.Write(body)
 }

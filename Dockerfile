@@ -1,48 +1,36 @@
-FROM golang:1.16 AS builder
+FROM golang:1.16 AS build
 
-ENV GO111MODULE=on
-
+ADD . /opt/app
 WORKDIR /opt/app
+RUN go build ./cmd/main.go
 
-COPY . .
-
-RUN go build cmd/auth/main.go
-
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 RUN apt-get -y update && apt-get install -y tzdata
 
-ENV dbData "postgres://docker:docker@127.0.0.1:5432/docker?pool_max_conns=10"
-
-ENV TZ=Russina/Moscow
-
+ENV TZ=Russia/Moscow
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-ENV PostgresVer 12
-
-ENV PostgresPort 5432
-
-RUN apt-get -y update && apt-get install -y postgresql-$PostgresVer
+ENV PGVER 12
+RUN apt-get -y update && apt-get install -y postgresql-$PGVER
 
 USER postgres
 
-RUN service postgresql start &&\
-psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
-createdb -O docker docker &&\
-service postgresql stop
+RUN /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
+    createdb -O docker docker &&\
+    /etc/init.d/postgresql stop
 
-EXPOSE $PostgresPort
+
+EXPOSE 5432
 
 USER root
 
 WORKDIR /usr/src/app
 
 COPY . .
+COPY --from=build /opt/app/main .
 
-COPY --from=builder /opt/app/main .
-
-EXPOSE 8010
-
+EXPOSE 5000
 ENV PGPASSWORD docker
-
-CMD service postgresql start && psql -h localhost -d docker -U docker -p $PostgresPort -a -q -f ./build/init.sql && ./main
+CMD service postgresql start &&  psql -h localhost -d docker -U docker -p 5432 -a -q -f ./build/init.sql && ./main

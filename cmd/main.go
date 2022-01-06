@@ -16,7 +16,7 @@ import (
 
 func main() {
 	r := mux.NewRouter()
-	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "8000")}
+	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "5000")}
 	conn, err := config.GetConnectionString()
 	if err != nil {
 		log.Print(err)
@@ -33,7 +33,7 @@ func main() {
 	usecase := usecase2.NewForumUsecase(repo)
 	handler := delivery.NewForumHandler(usecase)
 
-	forum := r.PathPrefix("/forum").Subrouter()
+	forum := r.PathPrefix("/api/forum").Subrouter()
 	{
 		forum.HandleFunc("/create", handler.CreateForum).Methods("POST")
 		forum.HandleFunc("/{slug}/details", handler.GetForum).Methods("GET")
@@ -42,19 +42,19 @@ func main() {
 		forum.HandleFunc("/{slug}/threads", handler.GetThreads).Methods("GET")
 	}
 
-	post := r.PathPrefix("/post").Subrouter()
+	post := r.PathPrefix("/api/post").Subrouter()
 	{
 		post.HandleFunc("/{id}/details", handler.GetThreadInfo).Methods("GET")
 		post.HandleFunc("/id/details", handler.UpdateMessage).Methods("POST")
 	}
 
-	service := r.PathPrefix("/service").Subrouter()
+	service := r.PathPrefix("/api/service").Subrouter()
 	{
 		service.HandleFunc("/clear", handler.DropAllInfo).Methods("POST")
 		service.HandleFunc("/status", handler.GetStatus).Methods("GET")
 	}
 
-	thread := r.PathPrefix("/thread").Subrouter()
+	thread := r.PathPrefix("/api/thread").Subrouter()
 	{
 		thread.HandleFunc("/{slug}/create", handler.CreateThread).Methods("POST")
 		thread.HandleFunc("/{slug}/details", handler.GetThreadInfoBySlug).Methods("GET")
@@ -63,7 +63,7 @@ func main() {
 		thread.HandleFunc("/{slug}/vote", handler.VoteForThread).Methods("POST")
 	}
 
-	user := r.PathPrefix("/user").Subrouter()
+	user := r.PathPrefix("/api/user").Subrouter()
 	{
 		user.HandleFunc("/{nickname}/create", handler.CreateProfile).Methods("POST")
 		user.HandleFunc("/{nickname}/profile", handler.GetProfile).Methods("GET")

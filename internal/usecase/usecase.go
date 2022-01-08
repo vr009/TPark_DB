@@ -3,7 +3,6 @@ package usecase
 import (
 	"forum/internal"
 	"forum/internal/models"
-	"github.com/jackc/pgtype"
 )
 
 type ForumUsecase struct {
@@ -28,15 +27,15 @@ func (fu ForumUsecase) CreateThread(forum models.Forum, thread models.Thread) (m
 	return fu.repo.CreateThread(forum, thread)
 }
 
-func (fu ForumUsecase) GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, *models.InternalError) {
-	return fu.repo.GetUsers(forum, limit, sinceUser, desc)
+func (fu ForumUsecase) GetUsers(forum models.Forum, limit, since, desc string) (models.Users, *models.InternalError) {
+	return fu.repo.GetUsers(forum, limit, since, desc)
 }
 
-func (fu ForumUsecase) GetThreads(forum models.Forum, limit int32, since pgtype.Timestamptz, desc bool) (models.Threads, *models.InternalError) {
+func (fu ForumUsecase) GetThreads(forum models.Forum, limit, since, desc string) (models.Threads, *models.InternalError) {
 	return fu.repo.GetThreads(forum, limit, since, desc)
 }
 
-func (fu ForumUsecase) GetPostInfo(post models.Post, related string) (models.PostFull, *models.InternalError) {
+func (fu ForumUsecase) GetPostInfo(post models.Post, related []string) (models.PostFull, *models.InternalError) {
 	return fu.repo.GetPostInfo(post, related)
 }
 

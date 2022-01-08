@@ -236,7 +236,7 @@ func (fh ForumHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug")
+	slug := GetFromVars(r, "slug_or_id")
 	if slug == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -266,7 +266,7 @@ func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug")
+	slug := GetFromVars(r, "slug_or_id")
 	if slug == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -289,7 +289,7 @@ func (fh ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Reques
 }
 
 func (fh ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug")
+	slug := GetFromVars(r, "slug_or_id")
 	if slug == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -318,7 +318,7 @@ func (fh ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug")
+	slug := GetFromVars(r, "slug_or_id")
 	if slug == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -350,7 +350,7 @@ func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug")
+	slug := GetFromVars(r, "slug_or_id")
 	if slug == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return

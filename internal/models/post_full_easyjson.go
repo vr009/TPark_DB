@@ -37,13 +37,37 @@ func easyjson95e8944cDecodeForumInternalModels(in *jlexer.Lexer, out *PostFull) 
 		}
 		switch key {
 		case "post":
-			easyjson95e8944cDecodeForumInternalModels1(in, &out.Post)
+			(out.Post).UnmarshalEasyJSON(in)
 		case "author":
-			(out.Author).UnmarshalEasyJSON(in)
+			if in.IsNull() {
+				in.Skip()
+				out.Author = nil
+			} else {
+				if out.Author == nil {
+					out.Author = new(User)
+				}
+				(*out.Author).UnmarshalEasyJSON(in)
+			}
 		case "thread":
-			(out.Thread).UnmarshalEasyJSON(in)
+			if in.IsNull() {
+				in.Skip()
+				out.Thread = nil
+			} else {
+				if out.Thread == nil {
+					out.Thread = new(Thread)
+				}
+				(*out.Thread).UnmarshalEasyJSON(in)
+			}
 		case "forum":
-			(out.Forum).UnmarshalEasyJSON(in)
+			if in.IsNull() {
+				in.Skip()
+				out.Forum = nil
+			} else {
+				if out.Forum == nil {
+					out.Forum = new(Forum)
+				}
+				(*out.Forum).UnmarshalEasyJSON(in)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -61,22 +85,22 @@ func easyjson95e8944cEncodeForumInternalModels(out *jwriter.Writer, in PostFull)
 	{
 		const prefix string = ",\"post\":"
 		out.RawString(prefix[1:])
-		easyjson95e8944cEncodeForumInternalModels1(out, in.Post)
+		(in.Post).MarshalEasyJSON(out)
 	}
-	if true {
+	if in.Author != nil {
 		const prefix string = ",\"author\":"
 		out.RawString(prefix)
-		(in.Author).MarshalEasyJSON(out)
+		(*in.Author).MarshalEasyJSON(out)
 	}
-	if true {
+	if in.Thread != nil {
 		const prefix string = ",\"thread\":"
 		out.RawString(prefix)
-		(in.Thread).MarshalEasyJSON(out)
+		(*in.Thread).MarshalEasyJSON(out)
 	}
-	if true {
+	if in.Forum != nil {
 		const prefix string = ",\"forum\":"
 		out.RawString(prefix)
-		(in.Forum).MarshalEasyJSON(out)
+		(*in.Forum).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }
@@ -103,95 +127,4 @@ func (v *PostFull) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *PostFull) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson95e8944cDecodeForumInternalModels(l, v)
-}
-func easyjson95e8944cDecodeForumInternalModels1(in *jlexer.Lexer, out *Post) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		if isTopLevel {
-			in.Consumed()
-		}
-		in.Skip()
-		return
-	}
-	in.Delim('{')
-	for !in.IsDelim('}') {
-		key := in.UnsafeFieldName(false)
-		in.WantColon()
-		if in.IsNull() {
-			in.Skip()
-			in.WantComma()
-			continue
-		}
-		switch key {
-		case "id":
-			out.Id = int32(in.Int32())
-		case "parent":
-			out.Parent = int32(in.Int32())
-		case "author":
-			out.Author = string(in.String())
-		case "message":
-			out.Message = string(in.String())
-		case "isEdited":
-			out.IsEdited = bool(in.Bool())
-		case "forum":
-			out.Forum = string(in.String())
-		case "thread":
-			out.Thread = int32(in.Int32())
-		case "created":
-			out.Created = string(in.String())
-		default:
-			in.SkipRecursive()
-		}
-		in.WantComma()
-	}
-	in.Delim('}')
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson95e8944cEncodeForumInternalModels1(out *jwriter.Writer, in Post) {
-	out.RawByte('{')
-	first := true
-	_ = first
-	{
-		const prefix string = ",\"id\":"
-		out.RawString(prefix[1:])
-		out.Int32(int32(in.Id))
-	}
-	{
-		const prefix string = ",\"parent\":"
-		out.RawString(prefix)
-		out.Int32(int32(in.Parent))
-	}
-	{
-		const prefix string = ",\"author\":"
-		out.RawString(prefix)
-		out.String(string(in.Author))
-	}
-	{
-		const prefix string = ",\"message\":"
-		out.RawString(prefix)
-		out.String(string(in.Message))
-	}
-	{
-		const prefix string = ",\"isEdited\":"
-		out.RawString(prefix)
-		out.Bool(bool(in.IsEdited))
-	}
-	{
-		const prefix string = ",\"forum\":"
-		out.RawString(prefix)
-		out.String(string(in.Forum))
-	}
-	{
-		const prefix string = ",\"thread\":"
-		out.RawString(prefix)
-		out.Int32(int32(in.Thread))
-	}
-	{
-		const prefix string = ",\"created\":"
-		out.RawString(prefix)
-		out.String(string(in.Created))
-	}
-	out.RawByte('}')
 }

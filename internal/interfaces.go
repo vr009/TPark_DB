@@ -2,16 +2,15 @@ package internal
 
 import (
 	"forum/internal/models"
-	"github.com/jackc/pgtype"
 )
 
 type Repo interface {
 	CreateForum(forum models.Forum) (models.Forum, *models.InternalError)
 	GetForum(forum models.Forum) (models.Forum, *models.InternalError)
 	CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError)
-	GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, *models.InternalError)
-	GetThreads(forum models.Forum, limit int32, since pgtype.Timestamptz, desc bool) (models.Threads, *models.InternalError)
-	GetPostInfo(post models.Post, related string) (models.PostFull, *models.InternalError)
+	GetUsers(forum models.Forum, limit, since, desc string) (models.Users, *models.InternalError)
+	GetThreads(forum models.Forum, limit, since, desc string) (models.Threads, *models.InternalError)
+	GetPostInfo(post models.Post, related []string) (models.PostFull, *models.InternalError)
 	UpdateMessage(post models.Post, update models.PostUpdate) (models.Post, *models.InternalError)
 	DropAllData()
 	GetStatus() models.Status
@@ -29,9 +28,9 @@ type Usecase interface {
 	CreateForum(forum models.Forum) (models.Forum, *models.InternalError)
 	GetForum(forum models.Forum) (models.Forum, *models.InternalError)
 	CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError)
-	GetUsers(forum models.Forum, limit int32, sinceUser models.User, desc bool) (models.Users, *models.InternalError)
-	GetThreads(forum models.Forum, limit int32, since pgtype.Timestamptz, desc bool) (models.Threads, *models.InternalError)
-	GetPostInfo(thread models.Post, related string) (models.PostFull, *models.InternalError)
+	GetUsers(forum models.Forum, limit, since, desc string) (models.Users, *models.InternalError)
+	GetThreads(forum models.Forum, limit, since, desc string) (models.Threads, *models.InternalError)
+	GetPostInfo(thread models.Post, related []string) (models.PostFull, *models.InternalError)
 	UpdateMessage(post models.Post, update models.PostUpdate) (models.Post, *models.InternalError)
 	DropAllInfo()
 	GetStatus() models.Status

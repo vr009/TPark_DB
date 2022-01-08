@@ -72,8 +72,8 @@ func (fu ForumUsecase) VoteForThread(thread models.Thread, vote models.Vote) (mo
 	return fu.repo.VoteForThread(thread, vote)
 }
 
-func (fu ForumUsecase) CreateProfile(user models.User) (models.User, *models.InternalError) {
-	return fu.CreateProfile(user)
+func (fu ForumUsecase) CreateProfile(user models.User) ([]models.User, *models.InternalError) {
+	return fu.repo.CreateUser(user)
 }
 
 func (fu ForumUsecase) GetProfile(user models.User) (models.User, *models.InternalError) {

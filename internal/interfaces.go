@@ -20,7 +20,7 @@ type Repo interface {
 	UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError)
 	GetPosts(forum models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError)
 	VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError)
-	CreateUser(user models.User) (models.User, *models.InternalError)
+	CreateUser(user models.User) ([]models.User, *models.InternalError)
 	GetUser(user models.User) (models.User, *models.InternalError)
 	UpdateUser(user models.User) (models.User, *models.InternalError)
 }
@@ -40,7 +40,7 @@ type Usecase interface {
 	UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError)
 	GetPosts(forum models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError)
 	VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError)
-	CreateProfile(user models.User) (models.User, *models.InternalError)
+	CreateProfile(user models.User) ([]models.User, *models.InternalError)
 	GetProfile(user models.User) (models.User, *models.InternalError)
 	UpdateProfile(user models.User) (models.User, *models.InternalError)
 }

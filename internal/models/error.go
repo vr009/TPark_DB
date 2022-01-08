@@ -7,7 +7,8 @@ type Error struct {
 type ErrorCode int
 
 const (
-	AlreadyExists ErrorCode = iota
+	OK ErrorCode = iota
+	ForumConflict
 	NotFound
 )
 

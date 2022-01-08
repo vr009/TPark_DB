@@ -6,7 +6,6 @@ import (
 	"forum/internal/delivery"
 	repo2 "forum/internal/repo"
 	usecase2 "forum/internal/usecase"
-	config "forum/utils"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
@@ -17,11 +16,7 @@ import (
 func main() {
 	r := mux.NewRouter()
 	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "5000")}
-	conn, err := config.GetConnectionString()
-	if err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
+	conn := "postgres://postgres:password@127.0.0.1:5432/db3?pool_max_conns=100"
 
 	pool, err := pgxpool.Connect(context.Background(), conn)
 	if err != nil {

@@ -5,10 +5,10 @@ import (
 	"forum/internal"
 	"forum/internal/models"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgtype"
 	"github.com/mailru/easyjson"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type ForumHandler struct {
@@ -129,12 +129,11 @@ func (fh ForumHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		Slug: slug,
 	}
 
-	desc, _ := strconv.ParseBool(r.URL.Query().Get("desc"))
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
+	desc := r.URL.Query().Get("desc")
+	limit := r.URL.Query().Get("limit")
 	since := r.URL.Query().Get("since")
-	user := models.User{NickName: since}
 
-	users, userErr := fh.usecase.GetUsers(forum, int32(limit), user, desc)
+	users, userErr := fh.usecase.GetUsers(forum, limit, since, desc)
 	if userErr != nil {
 		body, _ := json.Marshal(userErr.Err)
 		w.WriteHeader(http.StatusNotFound)
@@ -156,14 +155,11 @@ func (fh ForumHandler) GetThreads(w http.ResponseWriter, r *http.Request) {
 	forum := models.Forum{
 		Slug: slug,
 	}
-	desc, _ := strconv.ParseBool(r.URL.Query().Get("desc"))
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
+	desc := r.URL.Query().Get("desc")
+	limit := r.URL.Query().Get("limit")
 	since := r.URL.Query().Get("since")
 
-	time, _ := http.ParseTime(since)
-	sinceDate := pgtype.Timestamptz{Time: time}
-
-	threads, forumErr := fh.usecase.GetThreads(forum, int32(limit), sinceDate, desc)
+	threads, forumErr := fh.usecase.GetThreads(forum, limit, since, desc)
 	if forumErr != nil {
 		body, _ := easyjson.Marshal(forumErr.Err)
 		w.WriteHeader(http.StatusNotFound)
@@ -183,8 +179,15 @@ func (fh ForumHandler) GetThreadInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	post := models.Post{Id: int32(id)}
-	relatedInfo := r.URL.Query().Get("related")
-	postFull, postErr := fh.usecase.GetPostInfo(post, relatedInfo)
+
+	query := r.URL.Query()
+	relateds := query["related"]
+	related := []string{}
+	if len(relateds) > 0 {
+		related = strings.Split(relateds[0], ",")
+	}
+
+	postFull, postErr := fh.usecase.GetPostInfo(post, related)
 	if postErr != nil {
 		body, _ := easyjson.Marshal(&postErr.Err)
 		w.WriteHeader(http.StatusNotFound)

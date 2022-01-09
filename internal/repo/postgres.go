@@ -16,12 +16,14 @@ import (
 type ForumRepo struct {
 	db   *pgxpool.Pool
 	info models.Status
+	tm   string
 }
 
 func NewForumRepo(pool *pgxpool.Pool) *ForumRepo {
 	return &ForumRepo{
 		db:   pool,
 		info: models.Status{},
+		tm:   time.Now().Format(time.RFC3339Nano),
 	}
 }
 
@@ -82,9 +84,7 @@ func (r ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.Intern
 			}
 		}
 	}
-	log.Println("1")
 	r.info.Forum++
-	log.Println("2")
 	return forum, nil
 }
 
@@ -154,6 +154,11 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 
 	query := `INSERT INTO threads (author, message, title, created_at, forum, slug, votes)
 				VALUES ($1, $2, $3, $4, $5, $6, $7)	RETURNING id`
+
+	if thread.Created == "" {
+		thread.Created = r.tm
+		//t.Created = r.tm
+	}
 
 	row := r.db.QueryRow(context.Background(), query, thread.Author, thread.Message, thread.Title,
 		thread.Created, thread.Forum, thread.Slug, 0)
@@ -352,7 +357,7 @@ func (r *ForumRepo) ForumCheck(forum models.Forum) (models.Forum, models.ErrorCo
 }
 
 func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (models.Threads, *models.InternalError) {
-	th := []models.Thread{}
+	th := models.Threads{}
 	var row v4.Rows
 	var err error
 
@@ -371,7 +376,7 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 						WHERE forum = $1
 						ORDER BY created_at DESC`
 		}
-		row, err = r.db.Query(context.Background(), query, forum)
+		row, err = r.db.Query(context.Background(), query, forum.Slug)
 	} else {
 
 		if limit != "" && since == "" {
@@ -388,7 +393,7 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 						ORDER BY created_at DESC  LIMIT $2`
 			}
 
-			row, err = r.db.Query(context.Background(), query, forum, limit)
+			row, err = r.db.Query(context.Background(), query, forum.Slug, limit)
 		}
 
 		if since != "" && limit == "" {
@@ -404,7 +409,11 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 						ORDER BY created_at DESC `
 			}
 
-			row, err = r.db.Query(context.Background(), query, forum, since)
+			row, err = r.db.Query(context.Background(), query, forum.Slug, since)
+			if err != nil {
+				log.Println("err1")
+				log.Println(err)
+			}
 		}
 
 		if since != "" && limit != "" {
@@ -421,18 +430,21 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 						WHERE forum = $1 AND created_at <= $2
 						ORDER BY created_at DESC LIMIT $3`
 			}
-			row, err = r.db.Query(context.Background(), query, forum, since, limit)
+			row, err = r.db.Query(context.Background(), query, forum.Slug, since, limit)
 		}
 	}
 	defer row.Close()
 	for row.Next() {
 		t := models.Thread{}
-		err = row.Scan(&t.Id, &t.Slug, &t.Author, &t.Created, &forum, &t.Title, &t.Message, &t.Votes)
+		createdAt := time.Time{}
+		err = row.Scan(&t.Id, &t.Slug, &t.Author, &createdAt, &t.Forum, &t.Title, &t.Message, &t.Votes)
+		t.Created = createdAt.Format(time.RFC3339Nano)
 
 		th = append(th, t)
 	}
-	if err == nil {
-
+	if err != nil {
+		log.Println("err")
+		log.Println(err)
 	}
 
 	if len(th) == 0 {
@@ -581,7 +593,7 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 	if err != nil {
 		Error := &models.InternalError{
 			Err: models.Error{
-				Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+				Message: fmt.Sprintf("Can't find thread with id #%d 0\n", thread.Id),
 			},
 			Code: models.NotFound,
 		}
@@ -613,7 +625,7 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 			if err != nil || old != int(p.Thread) {
 				Error := &models.InternalError{
 					Err: models.Error{
-						Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+						Message: fmt.Sprintf("Can't find thread with id #%d 1\n", thread.Id),
 					},
 					Code: models.ForumConflict,
 				}
@@ -623,7 +635,7 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 
 		err = tx.QueryRow(context.Background(), ins.Name, p.Author, p.Message, times, thread.Forum, false, p.Parent, thread.Id, []int{}).Scan(&p.Id)
 
-		p.Created = times.Format(time.RFC3339)
+		p.Created = times.Format(time.RFC3339Nano)
 
 		if err != nil {
 			tx.Rollback(context.Background())
@@ -632,7 +644,7 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 				case "23503":
 					Error := &models.InternalError{
 						Err: models.Error{
-							Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+							Message: fmt.Sprintf("Can't find thread with id #%d 3\n", thread.Id),
 						},
 						Code: models.NotFound,
 					}
@@ -663,12 +675,127 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 		if err != nil {
 			Error := &models.InternalError{
 				Err: models.Error{
-					Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+					Message: fmt.Sprintf("Can't find thread with id #%d 4\n", thread.Id),
 				},
 				Code: models.NotFound,
 			}
 			return []models.Post{}, Error
 		}
+		result = append(result, p)
+		r.info.Post++
+	}
+	tx.Commit(context.Background())
+	query3 := `UPDATE forums SET posts = posts + $2 WHERE slug =$1`
+	_, err = r.db.Exec(context.Background(), query3, thread.Forum, len(result))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return result, nil
+}
+
+func (r ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
+	thread := models.Thread{}
+
+	query := `SELECT forum
+					FROM threads
+					WHERE id = $1`
+	log.Println("already here")
+	log.Println(th.Id)
+	row := r.db.QueryRow(context.Background(), query, th.Id)
+	err := row.Scan(&thread.Forum)
+
+	if err != nil {
+		Error := &models.InternalError{
+			Err: models.Error{
+				Message: fmt.Sprintf("Can't find thread with id #%d 0\n", thread.Id),
+			},
+			Code: models.NotFound,
+		}
+		return []models.Post{}, Error
+	}
+
+	times := time.Now()
+
+	if len(posts) == 0 {
+		return posts, nil
+	}
+
+	tx, err := r.db.Begin(context.Background())
+	query = `INSERT INTO posts (author, post, created_at, forum,  isEdited, parent, thread, path) 
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+			RETURNING  id;`
+	ins, _ := tx.Prepare(context.Background(), "insert", query)
+
+	result := []models.Post{}
+	for _, p := range posts {
+		p.Forum = thread.Forum
+		p.Thread = thread.Id
+
+		if p.Parent != 0 {
+			old := 0
+			query2 := `SELECT thread FROM posts WHERE id = $1`
+			row = tx.QueryRow(context.Background(), query2, p.Parent)
+			err := row.Scan(&old)
+			if err != nil || old != int(p.Thread) {
+				Error := &models.InternalError{
+					Err: models.Error{
+						Message: fmt.Sprintf("Can't find thread with id #%d 1\n", thread.Id),
+					},
+					Code: models.ForumConflict,
+				}
+				return []models.Post{}, Error
+			}
+		}
+
+		err = tx.QueryRow(context.Background(), ins.Name, p.Author, p.Message, times, thread.Forum, false, p.Parent, th.Id, []int{}).Scan(&p.Id)
+
+		p.Created = times.Format(time.RFC3339Nano)
+
+		if err != nil {
+			tx.Rollback(context.Background())
+			if pqError, ok := err.(pgx.PgError); ok {
+				switch pqError.Code {
+				case "23503":
+					Error := &models.InternalError{
+						Err: models.Error{
+							Message: fmt.Sprintf("Can't find thread with id #%d 3\n", thread.Id),
+						},
+						Code: models.NotFound,
+					}
+					return []models.Post{}, Error
+				case "23505":
+					Error := &models.InternalError{
+						Err: models.Error{
+							Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+						},
+						Code: models.ForumConflict,
+					}
+					return []models.Post{}, Error
+				default:
+					Error := &models.InternalError{
+						Err: models.Error{
+							Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+						},
+						Code: models.ForumConflict,
+					}
+					return []models.Post{}, Error
+				}
+			}
+		}
+
+		query2 := `INSERT INTO forum_users(nickname,
+    	forum) VALUES ($1, $2) ON CONFLICT DO NOTHING;`
+		_, err = r.db.Exec(context.Background(), query2, p.Author, p.Forum)
+		if err != nil {
+			Error := &models.InternalError{
+				Err: models.Error{
+					Message: fmt.Sprintf("Can't find thread with id #%d 4\n", thread.Id),
+				},
+				Code: models.NotFound,
+			}
+			return []models.Post{}, Error
+		}
+		p.Thread = th.Id
 		result = append(result, p)
 		r.info.Post++
 	}
@@ -814,9 +941,10 @@ func (r *ForumRepo) GetThreadBySlug(check string, thread models.Thread) (models.
 					WHERE slug = $1`
 	row := r.db.QueryRow(context.Background(), query, check)
 
+	createdAt := time.Time{}
 	err := row.Scan(&thread.Id, &thread.Author, &thread.Message, &thread.Title,
-		&thread.Created, &thread.Forum, &thread.Slug, &thread.Votes)
-
+		&createdAt, &thread.Forum, &thread.Slug, &thread.Votes)
+	thread.Created = createdAt.Format(time.RFC3339Nano)
 	if err != nil {
 		return thread, models.NotFound
 	}

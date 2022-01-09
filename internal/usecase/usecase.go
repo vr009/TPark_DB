@@ -55,6 +55,10 @@ func (fu ForumUsecase) CreatePosts(thread models.Thread, posts models.Posts) (mo
 	return fu.repo.CreatePosts(thread, posts)
 }
 
+func (fu ForumUsecase) CreatePostsID(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
+	return fu.repo.CreatePostsID(thread, posts)
+}
+
 func (fu ForumUsecase) GetThreadInfoBySlug(thread models.Thread) (models.Thread, *models.InternalError) {
 	return fu.repo.GetThreadInfoBySlug(thread)
 }

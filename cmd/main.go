@@ -52,11 +52,11 @@ func main() {
 
 	thread := r.PathPrefix("/api/thread").Subrouter()
 	{
-		thread.HandleFunc("/{slug}/create", handler.CreateThread).Methods("POST")
-		thread.HandleFunc("/{slug}/details", handler.GetThreadInfoBySlug).Methods("GET")
-		thread.HandleFunc("/{slug}/details", handler.UpdateThread).Methods("POST")
-		thread.HandleFunc("/{slug}/posts", handler.GetPosts).Methods("GET")
-		thread.HandleFunc("/{slug}/vote", handler.VoteForThread).Methods("POST")
+		thread.HandleFunc("/{slug_or_id}/create", handler.CreatePosts).Methods("POST")
+		thread.HandleFunc("/{slug_or_id}/details", handler.GetThreadInfoBySlug).Methods("GET")
+		thread.HandleFunc("/{slug_or_id}/details", handler.UpdateThread).Methods("POST")
+		thread.HandleFunc("/{slug_or_id}/posts", handler.GetPosts).Methods("GET")
+		thread.HandleFunc("/{slug_or_id}/vote", handler.VoteForThread).Methods("POST")
 	}
 
 	user := r.PathPrefix("/api/user").Subrouter()

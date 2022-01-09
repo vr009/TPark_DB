@@ -110,6 +110,7 @@ func (fu ForumHandler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	thread.Forum = slug
 
 	th, forumErr := fu.usecase.CreateThread(*forum, thread)
 	if forumErr != nil {
@@ -263,23 +264,33 @@ func (fh ForumHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug_or_id")
-	if slug == "" {
+	slugOrID := GetFromVars(r, "slug_or_id")
+	if slugOrID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	thread := models.Thread{
-		Slug: slug,
-	}
 
 	posts := models.Posts{}
-	err := json.NewDecoder(r.Body).Decode(posts)
+	err := json.NewDecoder(r.Body).Decode(&posts)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	_, intErr := fh.usecase.CreatePosts(thread, posts)
+	intErr := &models.InternalError{}
+	thread := models.Thread{}
+
+	postsAnswer := models.Posts{}
+
+	id, err := strconv.ParseInt(slugOrID, 10, 64)
+	if err == nil {
+		thread.Id = int32(id)
+		postsAnswer, intErr = fh.usecase.CreatePostsID(thread, posts)
+	} else {
+		thread.Slug = slugOrID
+		postsAnswer, intErr = fh.usecase.CreatePosts(thread, posts)
+	}
+
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
 		w.Header().Set("Content-Type", "application/json")
@@ -288,7 +299,7 @@ func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, _ := json.Marshal(posts)
+	body, _ := json.Marshal(postsAnswer)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(body)

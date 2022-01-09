@@ -15,6 +15,7 @@ type Repo interface {
 	DropAllData()
 	GetStatus() models.Status
 	CreatePosts(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError)
+	CreatePostsID(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError)
 	GetThreadInfoBySlug(thread models.Thread) (models.Thread, *models.InternalError)
 	UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError)
 	GetPosts(forum models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError)
@@ -35,6 +36,7 @@ type Usecase interface {
 	DropAllInfo()
 	GetStatus() models.Status
 	CreatePosts(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError)
+	CreatePostsID(thread models.Thread, posts models.Posts) (models.Posts, *models.InternalError)
 	GetThreadInfoBySlug(thread models.Thread) (models.Thread, *models.InternalError)
 	UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError)
 	GetPosts(forum models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError)

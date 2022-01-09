@@ -7,9 +7,9 @@ type Error struct {
 type ErrorCode int
 
 const (
-	OK ErrorCode = iota
-	ForumConflict
-	NotFound
+	OK            ErrorCode = 200
+	ForumConflict           = 409
+	NotFound                = 404
 )
 
 type InternalError struct {

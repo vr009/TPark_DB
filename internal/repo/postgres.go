@@ -20,7 +20,8 @@ type ForumRepo struct {
 
 func NewForumRepo(pool *pgxpool.Pool) *ForumRepo {
 	return &ForumRepo{
-		db: pool,
+		db:   pool,
+		info: models.Status{},
 	}
 }
 
@@ -31,7 +32,7 @@ func (r ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.Intern
 			Err: models.Error{
 				Message: fmt.Sprintf("Can't find thread with id #\n"),
 			},
-			Code: models.ForumConflict,
+			Code: models.NotFound,
 		}
 		return models.Forum{}, Error
 	}
@@ -81,8 +82,9 @@ func (r ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.Intern
 			}
 		}
 	}
-
+	log.Println("1")
 	r.info.Forum++
+	log.Println("2")
 	return forum, nil
 }
 
@@ -113,7 +115,7 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 	if code != models.OK {
 		Error := &models.InternalError{
 			Err: models.Error{
-				Message: fmt.Sprintf("Can't find thread with id #\n"),
+				Message: fmt.Sprintf("Can't find user with id 1#\n"),
 			},
 			Code: models.NotFound,
 		}
@@ -125,7 +127,7 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 	if status == models.NotFound {
 		Error := &models.InternalError{
 			Err: models.Error{
-				Message: fmt.Sprintf("Can't find thread with id #\n"),
+				Message: fmt.Sprintf("Can't find forum with id 2#\n"),
 			},
 			Code: models.NotFound,
 		}
@@ -172,7 +174,7 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 			case "23503":
 				Error := &models.InternalError{
 					Err: models.Error{
-						Message: fmt.Sprintf("Can't find thread with id #\n"),
+						Message: fmt.Sprintf("Can't find thread with id 3#\n"),
 					},
 					Code: models.NotFound,
 				}
@@ -181,7 +183,7 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 				log.Print(pqError.Code)
 				Error := &models.InternalError{
 					Err: models.Error{
-						Message: fmt.Sprintf("Can't find thread with id #\n"),
+						Message: fmt.Sprintf("Can't find thread with id 4#\n"),
 					},
 					Code: models.NotFound,
 				}
@@ -1104,7 +1106,7 @@ func (r ForumRepo) GetUser(user models.User) (models.User, *models.InternalError
 
 func (r ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalError) {
 	us, status := r.GetUser(user)
-	if status.Code == models.NotFound {
+	if status != nil {
 		return us, status
 	}
 
@@ -1125,7 +1127,7 @@ func (r ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalEr
 
 	rows := r.db.QueryRow(context.Background(), query, us.FullName, us.Email, us.About, us.NickName)
 	err := rows.Scan(&us.NickName, &us.FullName, &us.About, &us.Email)
-
+	log.Println("2")
 	if err != nil {
 		Error := &models.InternalError{
 			Err: models.Error{
@@ -1143,7 +1145,7 @@ func (r ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalEr
 			}
 		}
 	}
-
+	log.Println("10")
 	return us, nil
 }
 

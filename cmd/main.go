@@ -16,7 +16,8 @@ import (
 func main() {
 	r := mux.NewRouter()
 	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "5000")}
-	conn := "postgres://postgres:password@127.0.0.1:5432/db3?pool_max_conns=100"
+	//conn := "postgres://postgres:password@127.0.0.1:5432/docker?pool_max_conns=100"
+	conn := "host=127.0.0.1 port=5432 user=docker password=docker dbname=docker"
 
 	pool, err := pgxpool.Connect(context.Background(), conn)
 	if err != nil {

@@ -39,18 +39,28 @@ func (fh ForumHandler) CreateForum(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newForum, forumErr := fh.usecase.CreateForum(forum)
-	if forumErr != nil {
+
+	if forumErr != nil && forumErr.Code == models.ForumConflict {
+		body, _ := easyjson.Marshal(newForum)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		w.Write(body)
+		return
+	} else if forumErr != nil {
+		body, _ := easyjson.Marshal(forumErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(int(forumErr.Code))
+		w.Write(body)
 		return
 	}
 
-	body, err := easyjson.Marshal(&newForum)
+	body, err := easyjson.Marshal(newForum)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(body)
 }
 
@@ -68,6 +78,7 @@ func (fh ForumHandler) GetForum(w http.ResponseWriter, r *http.Request) {
 	newForum, forumErr := fh.usecase.GetForum(*forum)
 	if forumErr != nil {
 		body, _ := easyjson.Marshal(forumErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
@@ -78,6 +89,7 @@ func (fh ForumHandler) GetForum(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -104,10 +116,12 @@ func (fu ForumHandler) CreateThread(w http.ResponseWriter, r *http.Request) {
 		switch forumErr.Code {
 		case http.StatusNotFound:
 			body, _ := easyjson.Marshal(forumErr.Err)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(body)
 		case http.StatusConflict:
 			body, _ := easyjson.Marshal(th)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)
 			w.Write(body)
 		}
@@ -115,7 +129,8 @@ func (fu ForumHandler) CreateThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, _ := easyjson.Marshal(th)
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(body)
 }
 
@@ -136,13 +151,15 @@ func (fh ForumHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, userErr := fh.usecase.GetUsers(forum, limit, since, desc)
 	if userErr != nil {
 		body, _ := json.Marshal(userErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 
 	body, _ := json.Marshal(users)
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(body)
 }
 
@@ -162,12 +179,14 @@ func (fh ForumHandler) GetThreads(w http.ResponseWriter, r *http.Request) {
 	threads, forumErr := fh.usecase.GetThreads(forum, limit, since, desc)
 	if forumErr != nil {
 		body, _ := easyjson.Marshal(forumErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 
 	body, _ := json.Marshal(threads)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -190,11 +209,13 @@ func (fh ForumHandler) GetThreadInfo(w http.ResponseWriter, r *http.Request) {
 	postFull, postErr := fh.usecase.GetPostInfo(post, related)
 	if postErr != nil {
 		body, _ := easyjson.Marshal(&postErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 	body, _ := easyjson.Marshal(&postFull)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -216,11 +237,13 @@ func (fh ForumHandler) UpdateMessage(w http.ResponseWriter, r *http.Request) {
 	newPost, intErr := fh.usecase.UpdateMessage(post, postUpdate)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(&intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 	body, _ := json.Marshal(&newPost)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 	return
@@ -234,6 +257,7 @@ func (fh ForumHandler) DropAllInfo(w http.ResponseWriter, r *http.Request) {
 func (fh ForumHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	st := fh.usecase.GetStatus()
 	body, _ := easyjson.Marshal(st)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -258,13 +282,15 @@ func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 	_, intErr := fh.usecase.CreatePosts(thread, posts)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(int(intErr.Code))
 		w.Write(body)
 		return
 	}
 
 	body, _ := json.Marshal(posts)
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(body)
 }
 
@@ -281,12 +307,14 @@ func (fh ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Reques
 	th, intErr := fh.usecase.GetThreadInfoBySlug(thread)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 
 	body, _ := easyjson.Marshal(th)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -310,12 +338,14 @@ func (fh ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
 	th, intErr := fh.usecase.UpdateThread(thread, updateThread)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 
 	body, _ := easyjson.Marshal(th)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -342,12 +372,14 @@ func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 	posts, intErr := fh.usecase.GetPosts(thread, int32(limit), sincePost, sort, desc)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 
 	body, _ := json.Marshal(posts)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -370,11 +402,13 @@ func (fh ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
 	th, intErr := fh.usecase.VoteForThread(thread, vote)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 	body, _ := easyjson.Marshal(th)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -392,15 +426,17 @@ func (fh ForumHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.NickName = nickname
-	_, intErr := fh.usecase.CreateProfile(user)
+	users, intErr := fh.usecase.CreateProfile(user)
 	if intErr != nil {
-		body, _ := easyjson.Marshal(intErr.Err)
+		body, _ := json.Marshal(users)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(body)
 		return
 	}
 	body, _ := easyjson.Marshal(user)
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(body)
 }
 
@@ -415,11 +451,13 @@ func (fh ForumHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	usr, intErr := fh.usecase.GetProfile(user)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(body)
 		return
 	}
 	body, _ := easyjson.Marshal(usr)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
@@ -446,11 +484,13 @@ func (fh ForumHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	usr, intErr := fh.usecase.UpdateProfile(user)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
-		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(int(intErr.Code))
 		w.Write(body)
 		return
 	}
 	body, _ := easyjson.Marshal(usr)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }

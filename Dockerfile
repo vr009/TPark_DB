@@ -2,6 +2,8 @@ FROM golang:1.16 AS build
 
 ADD . /opt/app
 WORKDIR /opt/app
+RUN go mod download github.com/jackc/puddle
+RUN go mod tidy
 RUN go build ./cmd/main.go
 
 FROM ubuntu:20.04
@@ -33,4 +35,4 @@ COPY --from=build /opt/app/main .
 
 EXPOSE 5000
 ENV PGPASSWORD docker
-CMD service postgresql start &&  psql -h localhost -d docker -U docker -p 5432 -a -q -f ./build/init.sql && ./main
+CMD service postgresql start &&  psql -h localhost -d docker -U docker -p 5432 -a -q -f ./db/db.sql && ./main

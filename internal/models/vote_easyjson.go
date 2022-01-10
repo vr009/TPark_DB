@@ -40,6 +40,8 @@ func easyjsonE3ecfa40DecodeForumInternalModels(in *jlexer.Lexer, out *Vote) {
 			out.NickName = string(in.String())
 		case "voice":
 			out.Voice = int32(in.Int32())
+		case "Existed":
+			out.Existed = bool(in.Bool())
 		default:
 			in.SkipRecursive()
 		}
@@ -63,6 +65,11 @@ func easyjsonE3ecfa40EncodeForumInternalModels(out *jwriter.Writer, in Vote) {
 		const prefix string = ",\"voice\":"
 		out.RawString(prefix)
 		out.Int32(int32(in.Voice))
+	}
+	{
+		const prefix string = ",\"Existed\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.Existed))
 	}
 	out.RawByte('}')
 }

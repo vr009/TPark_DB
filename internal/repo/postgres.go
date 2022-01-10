@@ -27,7 +27,7 @@ func NewForumRepo(pool *pgxpool.Pool) *ForumRepo {
 	}
 }
 
-func (r ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.InternalError) {
+func (r *ForumRepo) CreateForum(forum models.Forum) (models.Forum, *models.InternalError) {
 	user, code := r.CheckUser(models.User{NickName: forum.User})
 	if code != models.OK {
 		Error := &models.InternalError{
@@ -110,7 +110,7 @@ func (r ForumRepo) GetForum(forum models.Forum) (models.Forum, *models.InternalE
 	return forum, nil
 }
 
-func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError) {
+func (r *ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (models.Thread, *models.InternalError) {
 	user, code := r.CheckUser(models.User{NickName: thread.Author})
 	if code != models.OK {
 		Error := &models.InternalError{
@@ -185,7 +185,6 @@ func (r ForumRepo) CreateThread(forum models.Forum, thread models.Thread) (model
 				}
 				return models.Thread{}, Error
 			default:
-				log.Print(pqError.Code)
 				Error := &models.InternalError{
 					Err: models.Error{
 						Message: fmt.Sprintf("Can't find thread with id 4#\n"),
@@ -328,7 +327,9 @@ func (r ForumRepo) GetUsers(forum models.Forum, limit, since, desc string) (mode
 		}
 
 		row, err = r.db.Query(context.Background(), query, forum.Slug, since, limit)
-		log.Print(err)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 
 	defer row.Close()
@@ -411,8 +412,6 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 
 			row, err = r.db.Query(context.Background(), query, forum.Slug, since)
 			if err != nil {
-				log.Println("err1")
-				log.Println(err)
 			}
 		}
 
@@ -443,8 +442,6 @@ func (r ForumRepo) GetThreads(forum models.Forum, limit, since, desc string) (mo
 		th = append(th, t)
 	}
 	if err != nil {
-		log.Println("err")
-		log.Println(err)
 	}
 
 	if len(th) == 0 {
@@ -482,7 +479,7 @@ func (r ForumRepo) GetPostInfo(post models.Post, related []string) (models.PostF
 	row := r.db.QueryRow(context.Background(), query, post.Id)
 	err := row.Scan(&p.Author, &p.Message, &times,
 		&p.Forum, &p.IsEdited, &p.Parent, &p.Thread)
-	p.Created = times.Format(time.RFC3339)
+	p.Created = times.Format(time.RFC3339Nano)
 
 	if err != nil {
 		Error := &models.InternalError{
@@ -529,7 +526,7 @@ func (r ForumRepo) UpdateMessage(post models.Post, update models.PostUpdate) (mo
 	times := time.Time{}
 	err := row.Scan(&res.Id, &res.Author, &res.Message, &times,
 		&res.Forum, &res.IsEdited, &res.Parent, &res.Thread)
-	res.Created = times.Format(time.RFC3339)
+	res.Created = times.Format(time.RFC3339Nano)
 	//поста нет
 	if err != nil {
 		Error := &models.InternalError{
@@ -564,7 +561,7 @@ func (r ForumRepo) UpdateMessage(post models.Post, update models.PostUpdate) (mo
 	return res, nil
 }
 
-func (r ForumRepo) DropAllData() {
+func (r *ForumRepo) DropAllData() {
 	query := `TRUNCATE TABLE users, forums, threads, post CASCADE;`
 	r.db.Exec(context.Background(), query)
 
@@ -576,11 +573,11 @@ func (r ForumRepo) DropAllData() {
 	}
 }
 
-func (r ForumRepo) GetStatus() models.Status {
+func (r *ForumRepo) GetStatus() models.Status {
 	return r.info
 }
 
-func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
+func (r *ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
 	thread := models.Thread{}
 
 	query := `SELECT id, forum
@@ -693,14 +690,13 @@ func (r ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Pos
 	return result, nil
 }
 
-func (r ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
+func (r *ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.Posts, *models.InternalError) {
 	thread := models.Thread{}
 
 	query := `SELECT forum
 					FROM threads
 					WHERE id = $1`
-	log.Println("already here")
-	log.Println(th.Id)
+
 	row := r.db.QueryRow(context.Background(), query, th.Id)
 	err := row.Scan(&thread.Forum)
 
@@ -822,6 +818,22 @@ func (r ForumRepo) GetThreadInfoBySlug(thread models.Thread) (models.Thread, *mo
 	return th, nil
 }
 
+func (r ForumRepo) GetThreadInfoByID(thread models.Thread) (models.Thread, *models.InternalError) {
+	th, st := r.GetThreadByID(int(thread.Id), thread)
+
+	intErr := &models.InternalError{}
+	if st != models.OK {
+		intErr = &models.InternalError{
+			Code: st,
+			Err:  models.Error{Message: fmt.Sprintf("Not found that thread")},
+		}
+	} else {
+		intErr = nil
+	}
+
+	return th, intErr
+}
+
 func (r ForumRepo) UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError) {
 	check := ""
 	if thread.Slug != "" {
@@ -856,9 +868,11 @@ func (r ForumRepo) UpdateThread(thread models.Thread, update models.ThreadUpdate
 	row := r.db.QueryRow(context.Background(), query, t.Message, t.Title, t.Id)
 	res := models.Thread{}
 
+	createdAt := time.Time{}
 	err := row.Scan(&res.Id, &res.Author, &res.Message, &res.Title,
-		&res.Created, &res.Forum, &res.Slug, &res.Votes)
-	if err == nil {
+		&createdAt, &res.Forum, &res.Slug, &res.Votes)
+	res.Created = createdAt.Format(time.RFC3339Nano)
+	if err != nil {
 	}
 
 	return res, nil
@@ -881,8 +895,10 @@ func (r *ForumRepo) GetThreadBySlugOrId(check string, thread models.Thread) (mod
 		row = r.db.QueryRow(context.Background(), query, value)
 	}
 
+	createdAt := time.Time{}
 	err := row.Scan(&thread.Id, &thread.Author, &thread.Message, &thread.Title,
-		&thread.Created, &thread.Forum, &thread.Slug, &thread.Votes)
+		&createdAt, &thread.Forum, &thread.Slug, &thread.Votes)
+	thread.Created = createdAt.Format(time.RFC3339Nano)
 
 	if err != nil {
 		return thread, models.NotFound
@@ -891,7 +907,7 @@ func (r *ForumRepo) GetThreadBySlugOrId(check string, thread models.Thread) (mod
 	return thread, models.OK
 }
 
-func (r ForumRepo) GetPosts(thread models.Thread, limit int32, since models.Post, sort string, desc bool) (models.Posts, *models.InternalError) {
+func (r ForumRepo) GetPosts(thread models.Thread, limit, sincePost, sort, desc string) (models.Posts, *models.InternalError) {
 	var row v4.Rows
 	ps := models.Posts{}
 	//TODO: получить только id
@@ -908,16 +924,16 @@ func (r ForumRepo) GetPosts(thread models.Thread, limit int32, since models.Post
 
 	switch sort {
 	case "flat":
-		row = r.getFlat(thread.Id, strconv.Itoa(int(since.Id)), strconv.Itoa(int(limit)), strconv.FormatBool(desc))
+		row = r.getFlat(thread.Id, sincePost, limit, desc)
 
 	case "tree":
-		row = r.getTree(thread.Id, strconv.Itoa(int(since.Id)), strconv.Itoa(int(limit)), strconv.FormatBool(desc))
+		row = r.getTree(thread.Id, sincePost, limit, desc)
 
 	case "parent_tree":
-		row = r.getParentTree(thread.Id, strconv.Itoa(int(since.Id)), strconv.Itoa(int(limit)), strconv.FormatBool(desc))
+		row = r.getParentTree(thread.Id, sincePost, limit, desc)
 
 	default:
-		row = r.getFlat(thread.Id, strconv.Itoa(int(since.Id)), strconv.Itoa(int(limit)), strconv.FormatBool(desc))
+		row = r.getFlat(thread.Id, sincePost, limit, desc)
 	}
 
 	defer row.Close()
@@ -926,7 +942,56 @@ func (r ForumRepo) GetPosts(thread models.Thread, limit int32, since models.Post
 		pr := models.Post{}
 		times := time.Time{}
 		err := row.Scan(&pr.Id, &pr.Author, &pr.Message, &times, &pr.Forum, &pr.IsEdited, &pr.Parent, &pr.Thread)
-		pr.Created = times.Format(time.RFC3339)
+		pr.Created = times.Format(time.RFC3339Nano)
+		if err != nil {
+		}
+		ps = append(ps, pr)
+	}
+
+	return ps, nil
+}
+
+func (r ForumRepo) GetPostsID(thread models.Thread, limit, sincePost, sort, desc string) (models.Posts, *models.InternalError) {
+	var row v4.Rows
+	ps := models.Posts{}
+
+	th := models.Thread{}
+	query := `SELECT id	FROM threads WHERE id = $1`
+	rows := r.db.QueryRow(context.Background(), query, thread.Id)
+
+	err := rows.Scan(&th.Id)
+
+	if err != nil {
+		Error := &models.InternalError{
+			Err: models.Error{
+				Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
+			},
+			Code: models.NotFound,
+		}
+		return ps, Error
+	}
+
+	switch sort {
+	case "flat":
+		row = r.getFlat(thread.Id, sincePost, limit, desc)
+
+	case "tree":
+		row = r.getTree(thread.Id, sincePost, limit, desc)
+
+	case "parent_tree":
+		row = r.getParentTree(thread.Id, sincePost, limit, desc)
+
+	default:
+		row = r.getFlat(thread.Id, sincePost, limit, desc)
+	}
+
+	defer row.Close()
+	for row.Next() {
+
+		pr := models.Post{}
+		times := time.Time{}
+		err := row.Scan(&pr.Id, &pr.Author, &pr.Message, &times, &pr.Forum, &pr.IsEdited, &pr.Parent, &pr.Thread)
+		pr.Created = times.Format(time.RFC3339Nano)
 		if err != nil {
 		}
 		ps = append(ps, pr)
@@ -1112,6 +1177,7 @@ func (r ForumRepo) VoteForThread(thread models.Thread, vote models.Vote) (models
 	vote.NickName = user.NickName
 
 	thread, status := r.GetSlugID(thread.Slug, models.Thread{})
+
 	if status == models.NotFound {
 		Error := &models.InternalError{
 			Err: models.Error{Message: fmt.Sprintf("Can't find user with id #%d\n", user.ID)},
@@ -1125,6 +1191,7 @@ func (r ForumRepo) VoteForThread(thread models.Thread, vote models.Vote) (models
 	value := 0
 
 	err := row.Scan(&vote.NickName, &vote.Voice, &thread.Id)
+
 	if err != nil {
 		if pqError, ok := err.(*pgconn.PgError); ok {
 			switch pqError.Code {
@@ -1147,21 +1214,68 @@ func (r ForumRepo) VoteForThread(thread models.Thread, vote models.Vote) (models
 	}
 	query = `UPDATE threads SET votes=votes+$1 WHERE id = $2;`
 	_, err = r.db.Exec(context.Background(), query, vote.Voice-int32(value), thread.Id)
-
 	thread, status = r.GetThreadByID(int(thread.Id), models.Thread{})
+	return thread, nil
+}
+
+func (r ForumRepo) VoteForThreadID(th models.Thread, vote models.Vote) (models.Thread, *models.InternalError) {
+	user, code := r.CheckUser(models.User{NickName: vote.NickName})
+	if code != models.OK {
+		Error := &models.InternalError{
+			Err: models.Error{Message: fmt.Sprintf("Can't find user with id #%d\n", user.ID)},
+		}
+		return models.Thread{}, Error
+	}
+	vote.NickName = user.NickName
+
+	thread, _ := r.GetThreadByID(int(th.Id), models.Thread{})
+
+	query := `INSERT INTO VOTES (author, vote, thread) VALUES ($1, $2, $3) RETURNING *, (xmax::text::int > 0)  as existed`
+	row := r.db.QueryRow(context.Background(), query, vote.NickName, vote.Voice, thread.Id)
+
+	value := 0
+
+	err := row.Scan(&vote.NickName, &vote.Voice, &thread.Id, &vote.Existed)
+	if err != nil {
+		if pqError, ok := err.(*pgconn.PgError); ok {
+			switch pqError.Code {
+			case "23503":
+				Error := &models.InternalError{
+					Err:  models.Error{Message: fmt.Sprintf("Can't find user with id #%d\n", user.ID)},
+					Code: models.NotFound,
+				}
+				return thread, Error
+			case "23505":
+				upd := "WITH u AS ( SELECT vote FROM votes WHERE author = $2 AND thread = $3)" +
+					"UPDATE votes SET vote =  $1 WHERE author = $2 AND thread = $3 " +
+					"RETURNING vote, (SELECT vote FROM u)"
+				row := r.db.QueryRow(context.Background(), upd, vote.Voice, vote.NickName, thread.Id)
+				err := row.Scan(&vote.Voice, &value)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+	}
+	query = `UPDATE threads SET votes=votes+$1 WHERE id = $2;`
+	_, err = r.db.Exec(context.Background(), query, int(vote.Voice)-value, thread.Id)
+
+	thread, _ = r.GetThreadByID(int(thread.Id), models.Thread{})
 	return thread, nil
 }
 
 func (r *ForumRepo) GetThreadByID(id int, thread models.Thread) (models.Thread, models.ErrorCode) {
 	var row v4.Row
 
+	createdAt := time.Time{}
 	query := `SELECT id, author, message, title, created_at, forum, slug, votes
 					FROM threads
 					WHERE id = $1`
 	row = r.db.QueryRow(context.Background(), query, id)
 
 	err := row.Scan(&thread.Id, &thread.Author, &thread.Message, &thread.Title,
-		&thread.Created, &thread.Forum, &thread.Slug, &thread.Votes)
+		&createdAt, &thread.Forum, &thread.Slug, &thread.Votes)
+	thread.Created = createdAt.Format(time.RFC3339Nano)
 
 	if err != nil {
 		return thread, models.NotFound
@@ -1185,10 +1299,9 @@ func (r *ForumRepo) GetSlugID(check string, thread models.Thread) (models.Thread
 	return thread, models.OK
 }
 
-func (r ForumRepo) CreateUser(user models.User) ([]models.User, *models.InternalError) {
+func (r *ForumRepo) CreateUser(user models.User) ([]models.User, *models.InternalError) {
 	results := []models.User{}
 	result := user
-
 	query := `INSERT INTO users (email, fullname, nickname, about) 
 			VALUES ($1, $2, $3, $4) RETURNING nickname`
 
@@ -1207,6 +1320,7 @@ func (r ForumRepo) CreateUser(user models.User) ([]models.User, *models.Internal
 	}
 
 	r.info.User++
+
 	results = append(results, result)
 	return results, nil
 }
@@ -1255,7 +1369,7 @@ func (r ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalEr
 
 	rows := r.db.QueryRow(context.Background(), query, us.FullName, us.Email, us.About, us.NickName)
 	err := rows.Scan(&us.NickName, &us.FullName, &us.About, &us.Email)
-	log.Println("2")
+
 	if err != nil {
 		Error := &models.InternalError{
 			Err: models.Error{
@@ -1273,7 +1387,7 @@ func (r ForumRepo) UpdateUser(user models.User) (models.User, *models.InternalEr
 			}
 		}
 	}
-	log.Println("10")
+
 	return us, nil
 }
 

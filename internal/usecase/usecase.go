@@ -63,16 +63,28 @@ func (fu ForumUsecase) GetThreadInfoBySlug(thread models.Thread) (models.Thread,
 	return fu.repo.GetThreadInfoBySlug(thread)
 }
 
+func (fu ForumUsecase) GetThreadInfoByID(thread models.Thread) (models.Thread, *models.InternalError) {
+	return fu.repo.GetThreadInfoByID(thread)
+}
+
 func (fu ForumUsecase) UpdateThread(thread models.Thread, update models.ThreadUpdate) (models.Thread, *models.InternalError) {
 	return fu.repo.UpdateThread(thread, update)
 }
 
-func (fu ForumUsecase) GetPosts(thread models.Thread, limit int32, sincePost models.Post, sort string, desc bool) (models.Posts, *models.InternalError) {
+func (fu ForumUsecase) GetPosts(thread models.Thread, limit, sincePost, sort, desc string) (models.Posts, *models.InternalError) {
 	return fu.repo.GetPosts(thread, limit, sincePost, sort, desc)
+}
+
+func (fu ForumUsecase) GetPostsID(thread models.Thread, limit, sincePost, sort, desc string) (models.Posts, *models.InternalError) {
+	return fu.repo.GetPostsID(thread, limit, sincePost, sort, desc)
 }
 
 func (fu ForumUsecase) VoteForThread(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError) {
 	return fu.repo.VoteForThread(thread, vote)
+}
+
+func (fu ForumUsecase) VoteForThreadID(thread models.Thread, vote models.Vote) (models.Thread, *models.InternalError) {
+	return fu.repo.VoteForThreadID(thread, vote)
 }
 
 func (fu ForumUsecase) CreateProfile(user models.User) ([]models.User, *models.InternalError) {

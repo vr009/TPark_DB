@@ -160,7 +160,7 @@ func (fh ForumHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	body, _ := json.Marshal(users)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	w.Write(body)
 }
 
@@ -306,16 +306,24 @@ func (fh ForumHandler) CreatePosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) GetThreadInfoBySlug(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug_or_id")
-	if slug == "" {
+	slugOrID := GetFromVars(r, "slug_or_id")
+	if slugOrID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	thread := models.Thread{
-		Slug: slug,
+	thread := models.Thread{}
+	th := models.Thread{}
+	intErr := &models.InternalError{}
+
+	id, err := strconv.ParseInt(slugOrID, 10, 32)
+	if err == nil {
+		thread.Id = int32(id)
+		th, intErr = fh.usecase.GetThreadInfoByID(thread)
+	} else {
+		thread.Slug = slugOrID
+		th, intErr = fh.usecase.GetThreadInfoBySlug(thread)
 	}
 
-	th, intErr := fh.usecase.GetThreadInfoBySlug(thread)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
 		w.Header().Set("Content-Type", "application/json")
@@ -362,25 +370,29 @@ func (fh ForumHandler) UpdateThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug_or_id")
-	if slug == "" {
+	slugOrID := GetFromVars(r, "slug_or_id")
+	if slugOrID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	thread := models.Thread{
-		Slug: slug,
+	thread := models.Thread{}
+	intErr := &models.InternalError{}
+	posts := models.Posts{}
+
+	desc := r.URL.Query().Get("desc")
+	limit := r.URL.Query().Get("limit")
+	since := r.URL.Query().Get("since")
+	sort := r.URL.Query().Get("sort")
+
+	id, err := strconv.ParseInt(slugOrID, 10, 32)
+	if err == nil {
+		thread.Id = int32(id)
+		posts, intErr = fh.usecase.GetPostsID(thread, limit, since, sort, desc)
+	} else {
+		thread.Slug = slugOrID
+		posts, intErr = fh.usecase.GetPosts(thread, limit, since, sort, desc)
 	}
 
-	desc, _ := strconv.ParseBool(r.URL.Query().Get("desc"))
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 32)
-	since, err := strconv.ParseInt(r.URL.Query().Get("since"), 10, 32)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	sort := r.URL.Query().Get("sort")
-	sincePost := models.Post{Id: int32(since)} // int64
-	posts, intErr := fh.usecase.GetPosts(thread, int32(limit), sincePost, sort, desc)
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
 		w.Header().Set("Content-Type", "application/json")
@@ -396,21 +408,31 @@ func (fh ForumHandler) GetPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (fh ForumHandler) VoteForThread(w http.ResponseWriter, r *http.Request) {
-	slug := GetFromVars(r, "slug_or_id")
-	if slug == "" {
+	slugOrID := GetFromVars(r, "slug_or_id")
+	if slugOrID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	thread := models.Thread{
-		Slug: slug,
-	}
+	thread := models.Thread{}
+	th := models.Thread{}
+	intErr := &models.InternalError{}
+
 	vote := models.Vote{}
 	err := easyjson.UnmarshalFromReader(r.Body, &vote)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	th, intErr := fh.usecase.VoteForThread(thread, vote)
+
+	id, err := strconv.ParseInt(slugOrID, 10, 64)
+	if err == nil {
+		thread.Id = int32(id)
+		th, intErr = fh.usecase.VoteForThreadID(thread, vote)
+	} else {
+		thread.Slug = slugOrID
+		th, intErr = fh.usecase.VoteForThread(thread, vote)
+	}
+
 	if intErr != nil {
 		body, _ := easyjson.Marshal(intErr.Err)
 		w.Header().Set("Content-Type", "application/json")

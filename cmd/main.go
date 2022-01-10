@@ -16,8 +16,8 @@ import (
 func main() {
 	r := mux.NewRouter()
 	srv := http.Server{Handler: r, Addr: fmt.Sprintf(":%s", "5000")}
-	//conn := "postgres://postgres:password@127.0.0.1:5432/docker?pool_max_conns=100"
-	conn := "host=127.0.0.1 port=5432 user=docker password=docker dbname=docker"
+	conn := "postgres://docker:docker@127.0.0.1:5432/docker?pool_max_conns=1000"
+	//conn := "host=127.0.0.1 port=5432 user=docker password=docker dbname=docker"
 
 	pool, err := pgxpool.Connect(context.Background(), conn)
 	if err != nil {
@@ -41,7 +41,7 @@ func main() {
 	post := r.PathPrefix("/api/post").Subrouter()
 	{
 		post.HandleFunc("/{id}/details", handler.GetThreadInfo).Methods("GET")
-		post.HandleFunc("/id/details", handler.UpdateMessage).Methods("POST")
+		post.HandleFunc("/{id}/details", handler.UpdateMessage).Methods("POST")
 	}
 
 	service := r.PathPrefix("/api/service").Subrouter()

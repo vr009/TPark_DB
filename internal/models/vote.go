@@ -8,4 +8,5 @@ const (
 type Vote struct {
 	NickName string `json:"nickname"`
 	Voice    int32  `json:"voice"`
+	Existed  bool
 }

@@ -3,77 +3,83 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TABLE users(
                       email citext UNIQUE NOT NULL,
                       fullname varchar NOT NULL,
-                      nickname citext COLLATE ucs_basic UNIQUE PRIMARY KEY,
+                      nickname citext COLLATE "C" UNIQUE PRIMARY KEY,
                       about text NOT NULL DEFAULT ''
 );
+--оставить оба.
+CREATE unique INDEX users_nickname ON users(nickname);  --тест
+CREATE unique INDEX users_email ON users(email); --ускорили вставку постов
+CREATE INDEX users_full ON users(email, nickname);  --ускорили вставку постов
 
 CREATE UNLOGGED TABLE forums (
     title varchar NOT NULL,
-    author citext references users(nickname),
+    author citext COLLATE "C" ,
     slug citext PRIMARY KEY,
     posts int DEFAULT 0,
     threads int DEFAULT 0
 );
+CREATE unique INDEX forums_slug ON forums(slug);
+--CREATE INDEX forums_users ON forums(author); --замедлило вставку постов, ускорило всё остальное
 
 CREATE UNLOGGED TABLE forum_users (
-    nickname citext references users(nickname),
-    forum citext references forums(slug),
+    nickname citext  collate "C",
+    forum citext COLLATE "C" ,
     CONSTRAINT fk UNIQUE(nickname, forum)
 );
 
-CREATE INDEX fu_nick ON forum_users(nickname);
-CREATE INDEX fu_for ON forum_users(forum);
+CREATE INDEX fu_forum ON forum_users(forum);
+CREATE INDEX fu_full ON forum_users(nickname,forum);
 
 CREATE UNLOGGED TABLE threads (
     id serial PRIMARY KEY,
-    author citext references users(nickname),
+    author  citext COLLATE "C" ,
     message citext NOT NULL,
     title citext NOT NULL,
     created_at timestamp with time zone,
-    forum citext references forums(slug),
+    forum  citext COLLATE "C" ,
     slug citext,
     votes int
 );
-CREATE INDEX ON threads(id, forum);
+
+CREATE INDEX IF NOT EXISTS threads_slug ON threads(slug); --тест
+CREATE INDEX IF NOT EXISTS threads_id ON threads(id); --тест
+CREATE INDEX IF NOT EXISTS threads_forum ON threads(forum); --не убирать
+CREATE INDEX IF NOT EXISTS created_forum_index ON threads(forum, created_at);
+CREATE INDEX  IF NOT EXISTS cluster_thread ON threads(id, forum); --ускоряет
 CREATE INDEX ON threads(slug, id, forum);
 
 CREATE UNLOGGED TABLE posts (
-    id serial PRIMARY KEY ,
-    author citext references users(nickname),
-    post citext NOT NULL,
+    id serial  PRIMARY KEY ,
+    author citext COLLATE "C",
+    post text NOT NULL,
     created_at timestamp with time zone,
-    forum citext references forums(slug),
+    forum citext COLLATE "C",
     isEdited bool,
     parent int,
-    thread int references threads(id),
-    path  INTEGER[]
+    thread int,
+    path integer []
 );
+CREATE INDEX IF NOT EXISTS posts_thread ON posts(thread); --не убирать
+CREATE INDEX IF NOT EXISTS posts_parent_thread_index ON posts(parent, thread);
+CREATE INDEX IF NOT EXISTS  parent_tree_index ON posts ((path[1]), path, id);
+CREATE unique INDEX IF NOT EXISTS posts_id ON posts(id);
 
 CREATE UNLOGGED TABLE votes (
-    author citext references users(nickname),
+    author citext COLLATE "C",
     vote int,
-    thread int references threads(id),
+    thread int,
     CONSTRAINT checks UNIQUE(author, thread)
 );
-
+CREATE INDEX votes_full ON votes(author, vote, thread);
 
 CREATE OR REPLACE FUNCTION update_path() RETURNS TRIGGER AS
 $update_path$
 DECLARE
-parent_path  INTEGER[];
+parent_path integer[];
     parent_thread int;
 BEGIN
-    IF (NEW.parent = 0) THEN
-        NEW.path := array_append(new.path, new.id);
-ELSE
-SELECT thread FROM posts WHERE id = new.parent INTO parent_thread;
-IF NOT FOUND OR parent_thread != NEW.thread THEN
-            RAISE EXCEPTION 'this is an exception' USING ERRCODE = '22000';
-end if;
-
 SELECT path FROM posts WHERE id = new.parent INTO parent_path;
 NEW.path := parent_path || new.id;
-END IF;
 RETURN new;
 END
 $update_path$ LANGUAGE plpgsql;
@@ -85,8 +91,6 @@ CREATE TRIGGER path_update_trigger
     FOR EACH ROW
     EXECUTE PROCEDURE update_path();
 
-CREATE INDEX parent_tree_index
-    ON posts ((path[1]), path DESC, id);
+VACUUM;
+VACUUM ANALYSE;
 
-CREATE INDEX parent_tree_index2
-    ON posts (id, (path[1]));

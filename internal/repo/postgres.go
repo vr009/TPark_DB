@@ -23,7 +23,7 @@ func NewForumRepo(pool *pgxpool.Pool) *ForumRepo {
 	return &ForumRepo{
 		db:   pool,
 		info: models.Status{},
-		tm:   time.Now().Format(time.RFC3339Nano),
+		tm:   time.Now().Format(time.RFC3339),
 	}
 }
 
@@ -597,7 +597,7 @@ func (r *ForumRepo) CreatePosts(th models.Thread, posts models.Posts) (models.Po
 		return []models.Post{}, Error
 	}
 
-	times := time.Now()
+	times, _ := time.Parse(time.RFC3339Nano, r.tm)
 
 	if len(posts) == 0 {
 		return posts, nil
@@ -732,7 +732,7 @@ func (r *ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.
 		return []models.Post{}, Error
 	}
 
-	times := time.Now()
+	times, _ := time.Parse(time.RFC3339Nano, r.tm)
 
 	if len(posts) == 0 {
 		return posts, nil

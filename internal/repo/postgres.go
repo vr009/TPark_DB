@@ -328,7 +328,7 @@ func (r ForumRepo) GetUsers(forum models.Forum, limit, since, desc string) (mode
 
 		row, err = r.db.Query(context.Background(), query, forum.Slug, since, limit)
 		if err != nil {
-			log.Print(err)
+
 		}
 	}
 
@@ -722,7 +722,7 @@ func (r *ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.
 	err := row.Scan(&thread.Forum)
 
 	if err != nil {
-		log.Print(err)
+
 		Error := &models.InternalError{
 			Err: models.Error{
 				Message: fmt.Sprintf("Can't find thread with id #%d 1\n", thread.Id),
@@ -844,125 +844,6 @@ func (r *ForumRepo) CreatePostsID(th models.Thread, posts models.Posts) (models.
 	}
 	return result, nil
 }
-
-//thread := models.Thread{}
-//
-//query := `SELECT forum
-//				FROM threads
-//				WHERE id = $1`
-//
-//row := r.db.QueryRow(context.Background(), query, th.Id)
-//err := row.Scan(&thread.Forum)
-//
-//if err != nil {
-//	Error := &models.InternalError{
-//		Err: models.Error{
-//			Message: fmt.Sprintf("Can't find thread with id #%d 0\n", thread.Id),
-//		},
-//		Code: models.NotFound,
-//	}
-//	return []models.Post{}, Error
-//}
-//
-//times := time.Now()
-//
-//if len(posts) == 0 {
-//	return posts, nil
-//}
-//
-//tx, err := r.db.Begin(context.Background())
-//query = `INSERT INTO posts (author, post, created_at, forum,  isEdited, parent, thread, path)
-//		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-//		RETURNING  id;`
-//ins, _ := tx.Prepare(context.Background(), "insert", query)
-//
-//result := []models.Post{}
-//for _, p := range posts {
-//	p.Forum = thread.Forum
-//	p.Thread = thread.Id
-//
-//	if p.Parent != 0 {
-//		old := 0
-//		query2 := `SELECT thread FROM posts WHERE id = $1`
-//		row = tx.QueryRow(context.Background(), query2, p.Parent)
-//		err := row.Scan(&old)
-//		if err != nil || old != int(p.Thread) {
-//			Error := &models.InternalError{
-//				Err: models.Error{
-//					Message: fmt.Sprintf("Can't find thread with id #%d 1\n", thread.Id),
-//				},
-//				Code: models.ForumConflict,
-//			}
-//			log.Println(err, 1)
-//			log.Println("Forum: ", thread.Forum)
-//			log.Println("Parent: ", p.Parent)
-//			log.Println("Old: ", old)
-//			log.Println("p.Thread: ", p.Thread)
-//			return []models.Post{}, Error
-//		}
-//	}
-//
-//	err = tx.QueryRow(context.Background(), ins.Name, p.Author, p.Message, times, thread.Forum, false, p.Parent, th.Id, []int{}).Scan(&p.Id)
-//
-//	p.Created = times.Format(time.RFC3339Nano)
-//
-//	if err != nil {
-//		tx.Rollback(context.Background())
-//		if pqError, ok := err.(pgx.PgError); ok {
-//			switch pqError.Code {
-//			case "23503":
-//				Error := &models.InternalError{
-//					Err: models.Error{
-//						Message: fmt.Sprintf("Can't find thread with id #%d 3\n", thread.Id),
-//					},
-//					Code: models.NotFound,
-//				}
-//				return []models.Post{}, Error
-//			case "23505":
-//				Error := &models.InternalError{
-//					Err: models.Error{
-//						Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
-//					},
-//					Code: models.ForumConflict,
-//				}
-//				log.Println(err.(pgx.PgError), 2)
-//				return []models.Post{}, Error
-//			default:
-//				Error := &models.InternalError{
-//					Err: models.Error{
-//						Message: fmt.Sprintf("Can't find thread with id #%d\n", thread.Id),
-//					},
-//					Code: models.ForumConflict,
-//				}
-//				log.Println("default")
-//				return []models.Post{}, Error
-//			}
-//		}
-//	}
-//
-//	query2 := `INSERT INTO forum_users(nickname,
-//	forum) VALUES ($1, $2) ON CONFLICT DO NOTHING;`
-//	_, err = r.db.Exec(context.Background(), query2, p.Author, p.Forum)
-//	if err != nil {
-//		Error := &models.InternalError{
-//			Err: models.Error{
-//				Message: fmt.Sprintf("Can't find thread with id #%d 4\n", thread.Id),
-//			},
-//			Code: models.NotFound,
-//		}
-//		return []models.Post{}, Error
-//	}
-//	p.Thread = th.Id
-//	result = append(result, p)
-//	r.info.Post++
-//}
-//tx.Commit(context.Background())
-//query3 := `UPDATE forums SET posts = posts + $2 WHERE slug =$1`
-//_, err = r.db.Exec(context.Background(), query3, thread.Forum, len(result))
-//if err != nil {
-//	log.Fatal(err)
-//}
-//return result, nil
 
 func (r ForumRepo) GetThreadInfoBySlug(thread models.Thread) (models.Thread, *models.InternalError) {
 	th, status := r.GetThreadBySlug(thread.Slug, thread)

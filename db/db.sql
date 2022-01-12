@@ -6,10 +6,10 @@ CREATE TABLE users(
                       nickname citext COLLATE "C" UNIQUE PRIMARY KEY,
                       about text NOT NULL DEFAULT ''
 );
---оставить оба.
-CREATE unique INDEX users_nickname ON users(nickname);  --тест
-CREATE unique INDEX users_email ON users(email); --ускорили вставку постов
-CREATE INDEX users_full ON users(email, nickname);  --ускорили вставку постов
+
+CREATE UNIQUE INDEX users_nickname ON users(nickname);
+CREATE UNIQUE INDEX users_email ON users(email);
+CREATE INDEX users_full ON users(email, nickname);
 
 CREATE UNLOGGED TABLE forums (
     title varchar NOT NULL,
@@ -19,10 +19,9 @@ CREATE UNLOGGED TABLE forums (
     threads int DEFAULT 0
 );
 CREATE unique INDEX forums_slug ON forums(slug);
---CREATE INDEX forums_users ON forums(author); --замедлило вставку постов, ускорило всё остальное
 
 CREATE UNLOGGED TABLE forum_users (
-    nickname citext  collate "C",
+    nickname citext  COLLATE "C",
     forum citext COLLATE "C" ,
     CONSTRAINT fk UNIQUE(nickname, forum)
 );
@@ -35,31 +34,31 @@ CREATE UNLOGGED TABLE threads (
     author  citext COLLATE "C" ,
     message citext NOT NULL,
     title citext NOT NULL,
-    created_at timestamp with time zone,
+    created_at TIMESTAMP WITH TIME ZONE,
     forum  citext COLLATE "C" ,
     slug citext,
     votes int
 );
 
-CREATE INDEX IF NOT EXISTS threads_slug ON threads(slug); --тест
-CREATE INDEX IF NOT EXISTS threads_id ON threads(id); --тест
-CREATE INDEX IF NOT EXISTS threads_forum ON threads(forum); --не убирать
+CREATE INDEX IF NOT EXISTS threads_slug ON threads(slug);
+CREATE INDEX IF NOT EXISTS threads_id ON threads(id);
+CREATE INDEX  IF NOT EXISTS cluster_thread ON threads(id, forum);
+CREATE INDEX IF NOT EXISTS threads_forum ON threads(forum);
 CREATE INDEX IF NOT EXISTS created_forum_index ON threads(forum, created_at);
-CREATE INDEX  IF NOT EXISTS cluster_thread ON threads(id, forum); --ускоряет
 CREATE INDEX ON threads(slug, id, forum);
 
 CREATE UNLOGGED TABLE posts (
     id serial  PRIMARY KEY ,
     author citext COLLATE "C",
     post text NOT NULL,
-    created_at timestamp with time zone,
+    created_at TIMESTAMP WITH TIME ZONE,
     forum citext COLLATE "C",
     isEdited bool,
     parent int,
     thread int,
     path integer []
 );
-CREATE INDEX IF NOT EXISTS posts_thread ON posts(thread); --не убирать
+CREATE INDEX IF NOT EXISTS posts_thread ON posts(thread);
 CREATE INDEX IF NOT EXISTS posts_parent_thread_index ON posts(parent, thread);
 CREATE INDEX IF NOT EXISTS  parent_tree_index ON posts ((path[1]), path, id);
 CREATE unique INDEX IF NOT EXISTS posts_id ON posts(id);
